@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Name=Sticky Notes
+Name[ko]=스티커 메모
+Comment=Terminal-style sticky notes that live on your desktop
+Comment[ko]=바탕화면에 붙여 두는 터미널 감성 메모
+Exec=@EXEC@
+Icon=com.kimsunmin.StickyNotes
+Terminal=false
+Categories=Utility;GTK;
+Keywords=note;memo;sticky;terminal;메모;포스트잇;
+StartupNotify=true
+StartupWMClass=com.kimsunmin.StickyNotes
+Actions=new-note;
+
+[Desktop Action new-note]
+Name=New Note
+Name[ko]=새 메모
+Exec=@EXEC@ --new
