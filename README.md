@@ -131,3 +131,7 @@ install.sh        앱 목록 등록, --autostart 로 자동 실행
 data/             데스크톱 파일 템플릿, 아이콘
 docs/             스크린샷
 ```
+
+## 라이선스
+
+[MIT](LICENSE)
