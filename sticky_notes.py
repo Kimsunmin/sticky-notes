@@ -257,7 +257,7 @@ def save_notes(notes):
 
 
 class NoteWindow(Gtk.ApplicationWindow):
-    def __init__(self, app, note, focus=True):
+    def __init__(self, app, note):
         super().__init__(application=app, show_menubar=False)
         self.note = note
         self._confirm_source = 0
@@ -277,11 +277,9 @@ class NoteWindow(Gtk.ApplicationWindow):
         visual = self.get_screen().get_rgba_visual()
         if visual:
             self.set_visual(visual)
-        # 바탕화면 위젯처럼 둔다: 모든 작업 공간에 보이고, 독·Alt+Tab·개요에는 나오지 않는다
+        # 모든 작업 공간에 보이게 한다. GNOME 은 독·Alt+Tab 에서 숨긴(skip_taskbar) 창을 개요에서도 숨기므로 숨기지 않는다.
+        # 포커스 없이 띄우면 다른 창과 겹칠 때 '준비 완료' 알림이 뜨므로 기본대로 포커스를 받게 둔다
         self.stick()
-        self.set_skip_taskbar_hint(True)
-        self.set_skip_pager_hint(True)
-        self.set_focus_on_map(focus)
 
         for name, callback in (
             ("cycle-theme", self._cycle_theme),
@@ -311,7 +309,7 @@ class NoteWindow(Gtk.ApplicationWindow):
         self.connect("realize", self._on_realize)
         self.connect("configure-event", self._on_configure)
         self.connect("key-press-event", self._on_key_press)
-        self.connect("notify::is-active", lambda *_: app.on_focus_changed())
+        self.connect("window-state-event", self._on_window_state)
         self.connect("delete-event", self._on_delete_event)
 
     def _build_titlebar(self):
@@ -379,8 +377,9 @@ class NoteWindow(Gtk.ApplicationWindow):
         return body
 
     def apply_layer(self):
-        # 평소에는 다른 창 아래(바탕화면), 고정했거나 잠깐 꺼내 볼 때만 위로 올린다
-        on_top = self.note.get("pinned", False) or self.get_application().peeking
+        # 평소에는 다른 창 아래(바탕화면)에 깔고, 고정했거나 꺼내 보는 중이거나 지금 쓰고 있는 메모만 위로 올린다.
+        # 그래야 개요·Alt+Tab·작업 공간 이동으로 포커스가 간 메모가 다른 창에 가려지지 않는다
+        on_top = self.note.get("pinned", False) or self.get_application().peeking or self.is_focused()
         if on_top:
             self.set_keep_below(False)
             self.set_keep_above(True)
@@ -537,6 +536,16 @@ class NoteWindow(Gtk.ApplicationWindow):
         # 최대화·최소화를 빼 두면 화면 가장자리로 끌어도 타일링되지 않는다
         self.get_window().set_functions(Gdk.WMFunction.MOVE | Gdk.WMFunction.RESIZE | Gdk.WMFunction.CLOSE)
 
+    def is_focused(self):
+        # GTK 의 is-active 는 우클릭 메뉴가 키보드를 잡기만 해도 꺼지므로 창 관리자가 알려 주는 포커스를 본다
+        window = self.get_window()
+        return bool(window and window.get_state() & Gdk.WindowState.FOCUSED)
+
+    def _on_window_state(self, _window, event):
+        if event.changed_mask & Gdk.WindowState.FOCUSED:
+            self.apply_layer()
+            self.get_application().on_focus_changed()
+
     def _on_titlebar_pressed(self, _widget, event):
         # 두 번 눌러 최대화하는 기본 동작은 메모에 어울리지 않아 직접 옮기기만 한다
         if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 1:
@@ -690,7 +699,7 @@ class StickyNotesApp(Gtk.Application):
         open_ids = {window.note["id"] for window in self.note_windows()}
         hidden = [note for note in self.notes if note["id"] not in open_ids]
         for note in hidden:
-            NoteWindow(self, note, focus=False).show_all()
+            NoteWindow(self, note).show_all()
         return bool(hidden)
 
     def new_note(self, near=None):
@@ -721,7 +730,7 @@ class StickyNotesApp(Gtk.Application):
 
     def _on_focus_timeout(self):
         self._focus_source = 0
-        if self.peeking and not any(window.is_active() for window in self.note_windows()):
+        if self.peeking and not any(window.is_focused() for window in self.note_windows()):
             self.set_peek(False)
         return GLib.SOURCE_REMOVE
 
