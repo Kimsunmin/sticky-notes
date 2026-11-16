@@ -22,7 +22,7 @@
 ## 요구 사항
 
 - Linux + GNOME Wayland 세션(XWayland 사용). Ubuntu 26.04 / GNOME 50에서 테스트했습니다.
-- Python 3, PyGObject, GTK 3
+- .deb와 snap은 필요한 것을 알아서 갖춥니다. 소스에서 실행하려면 Python 3, PyGObject, GTK 3가 필요한데, Ubuntu 데스크톱에는 기본으로 들어 있습니다.
 
 ```sh
 sudo apt install python3-gi gir1.2-gtk-3.0
@@ -31,6 +31,37 @@ sudo apt install python3-gi gir1.2-gtk-3.0
 글꼴은 `Ubuntu Sans Mono`를 쓰고, 한글·한자는 시스템 언어에 맞는 `Noto Sans Mono CJK`(`fonts-noto-cjk`)로 표시합니다. 둘 다 없으면 시스템 고정폭 글꼴을 씁니다.
 
 ## 설치
+
+### Ubuntu / Debian: .deb (추천)
+
+[sticky-notes.deb](https://github.com/Kimsunmin/sticky-notes/releases/latest/download/sticky-notes.deb)를 내려받아 열거나, 다음을 실행합니다.
+
+```sh
+wget https://github.com/Kimsunmin/sticky-notes/releases/latest/download/sticky-notes.deb
+sudo apt install ./sticky-notes.deb
+```
+
+로그인할 때 자동으로 실행하려면:
+
+```sh
+mkdir -p ~/.config/autostart
+cp /usr/share/applications/io.github.kimsunmin.StickyNotes.desktop ~/.config/autostart/
+```
+
+### Snap Store
+
+```sh
+sudo snap install sticky-notes
+```
+
+snap은 메모와 테마를 자기 폴더 `~/snap/sticky-notes/current/` 안에 저장합니다([데이터](#데이터) 참고). 로그인할 때 자동으로 실행하려면:
+
+```sh
+mkdir -p ~/.config/autostart
+cp /var/lib/snapd/desktop/applications/sticky-notes_sticky-notes.desktop ~/.config/autostart/
+```
+
+### 소스에서 설치
 
 ```sh
 git clone https://github.com/Kimsunmin/sticky-notes.git
@@ -43,17 +74,23 @@ cd sticky-notes
 
 ## 업데이트
 
+- **.deb**: 새 `sticky-notes.deb`를 내려받아 같은 방법으로 설치한 뒤, `sticky-notes --quit`으로 앱을 끄고 다시 실행합니다.
+- **Snap**: 자동으로 업데이트됩니다. 앱이 실행 중이면 앱을 끈 뒤에 적용됩니다.
+- **소스**:
+
 ```sh
 cd sticky-notes
 git pull
 ./install.sh
 ```
 
-`install.sh`가 앱 등록 정보(자동 실행을 켰다면 그것도)를 새로 쓰고, 실행 중인 앱을 새 코드로 다시 띄웁니다. 메모는 따로 저장되어 있어서 그대로 남습니다.
+`install.sh`가 앱 등록 정보(자동 실행을 켰다면 그것도)를 새로 쓰고, 실행 중인 앱을 새 코드로 다시 띄웁니다.
+
+어떤 방법이든 메모는 따로 저장되어 있어서 그대로 남습니다.
 
 ## 사용법
 
-앱 목록에서 **스티커 메모**를 실행하거나 `./sticky_notes.py`를 실행합니다.
+앱 목록에서 **스티커 메모**를 실행하거나 `sticky-notes`를 실행합니다(소스에서 설치했다면 `./sticky_notes.py`).
 
 ### 마우스
 
@@ -92,7 +129,7 @@ git pull
 `--new` 옵션으로 실행하면 메모를 앞으로 꺼내면서 새 메모를 엽니다. 앱 아이콘을 우클릭해 **새 메모**를 골라도 됩니다. 이 명령을 GNOME 단축키로 등록해 두면 편합니다.
 
 > 설정 → 키보드 → 키보드 바로 가기 → 사용자 지정 바로 가기
-> 명령: `/저장소/경로/sticky_notes.py --new`
+> 명령: `sticky-notes --new` (소스에서 설치했다면 `/저장소/경로/sticky_notes.py --new`)
 
 ### 메모 문법
 
@@ -116,7 +153,7 @@ git pull
 
 ### 나만의 테마 만들기
 
-`~/.config/sticky-notes/themes/` 폴더에 `이름.theme` 파일을 넣으면 테마가 하나 생깁니다. `[~]` 메뉴 맨 아래의 **테마 폴더 열기**로 이 폴더를 열 수 있습니다.
+`~/.config/sticky-notes/themes/` 폴더(snap은 `~/snap/sticky-notes/current/.config/sticky-notes/themes/`)에 `이름.theme` 파일을 넣으면 테마가 하나 생깁니다. `[~]` 메뉴 맨 아래의 **테마 폴더 열기**로 이 폴더를 열 수 있습니다.
 
 ```ini
 # ~/.config/sticky-notes/themes/ocean.theme
@@ -153,7 +190,7 @@ GNOME에서는 창을 독, Alt+Tab, 개요 화면에서 숨기는 힌트가 하�
 
 ### 메모는 어디에 저장되나요? 백업은 어떻게 하나요?
 
-모든 메모는 `~/.local/share/sticky-notes/notes.json` 한 파일에 있습니다. 이 파일을 복사해 두면 백업이 됩니다.
+모든 메모는 `~/.local/share/sticky-notes/notes.json` 한 파일에 있습니다(snap은 `~/snap/sticky-notes/current/.local/share/sticky-notes/notes.json`). 이 파일을 복사해 두면 백업이 됩니다.
 
 ### KDE Plasma, Xfce, X11 세션에서도 되나요?
 
@@ -161,7 +198,12 @@ GNOME 50(Ubuntu 26.04, Wayland)에서만 만들고 테스트했습니다. 표준
 
 ## 데이터
 
-모든 메모는 `~/.local/share/sticky-notes/notes.json` 한 파일에 저장됩니다. 바뀐 내용은 0.5초 안에 저장됩니다. 파일을 읽을 수 없으면 덮어쓰지 않고 `notes.broken-<시각>.json`으로 옮겨 둡니다.
+| | 메모 | 직접 만든 테마 |
+|---|---|---|
+| .deb, 소스 | `~/.local/share/sticky-notes/notes.json` | `~/.config/sticky-notes/themes/` |
+| Snap | `~/snap/sticky-notes/current/.local/share/sticky-notes/notes.json` | `~/snap/sticky-notes/current/.config/sticky-notes/themes/` |
+
+바뀐 내용은 0.5초 안에 저장됩니다. 메모 파일을 읽을 수 없으면 덮어쓰지 않고 `notes.broken-<시각>.json`으로 옮겨 둡니다.
 
 ## 동작 방식
 
@@ -185,23 +227,41 @@ GTK의 창 장식(CSD)을 쓰면 mutter가 그림자 폭만큼 어긋나게 배�
 
 ## 제거
 
+- **.deb**: `sudo apt remove sticky-notes`. 자동 실행을 켰다면 `~/.config/autostart/io.github.kimsunmin.StickyNotes.desktop`도 지웁니다.
+- **Snap**: `sudo snap remove sticky-notes`. 메모가 든 snap 폴더도 함께 지워지므로, 남기려면 먼저 `notes.json`을 복사해 두세요.
+- **소스**:
+
 ```sh
 ./sticky_notes.py --quit   # 실행 중이면 종료
-rm -f ~/.local/share/applications/com.kimsunmin.StickyNotes.desktop \
-   ~/.local/share/icons/hicolor/scalable/apps/com.kimsunmin.StickyNotes.svg \
-   ~/.config/autostart/com.kimsunmin.StickyNotes.desktop
-rm -r ~/.local/share/sticky-notes          # 메모까지 지우려면
-rm -r ~/.config/sticky-notes               # 테마까지 지우려면
+rm -f ~/.local/share/applications/io.github.kimsunmin.StickyNotes.desktop \
+   ~/.local/share/icons/hicolor/scalable/apps/io.github.kimsunmin.StickyNotes.svg \
+   ~/.config/autostart/io.github.kimsunmin.StickyNotes.desktop
+```
+
+메모와 테마까지 지우려면(.deb, 소스):
+
+```sh
+rm -r ~/.local/share/sticky-notes ~/.config/sticky-notes
 ```
 
 ## 구조
 
 ```text
 sticky_notes.py   앱 전체 (단일 파일)
-install.sh        설치, 업데이트, --autostart 로 자동 실행
-data/             데스크톱 파일 템플릿, 아이콘
+install.sh        소스 설치, 업데이트, --autostart 로 자동 실행
+data/             데스크톱 파일 템플릿, 아이콘, AppStream 메타정보
 docs/             스크린샷
+packaging/        .deb 빌드 스크립트
+snap/             snap 패키지
+.github/          릴리스 워크플로
 ```
+
+## 릴리스 방법
+
+1. `data/io.github.kimsunmin.StickyNotes.metainfo.xml` 맨 위에 `<release version="x.y.z" date="…">` 항목을 추가하고 커밋합니다. 버전은 여기에만 적습니다.
+2. 태그를 push합니다: `git tag vx.y.z && git push origin vx.y.z`
+
+GitHub Actions가 `sticky-notes.deb`와 snap을 만들어 릴리스에 붙입니다. 저장소 시크릿 `SNAPCRAFT_STORE_CREDENTIALS`가 있으면 Snap Store에도 올립니다.
 
 ## 라이선스
 

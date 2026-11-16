@@ -19,7 +19,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import GLib  # noqa: E402
 
-APP_ID = "com.kimsunmin.StickyNotes"
+APP_ID = "io.github.kimsunmin.StickyNotes"
 # X11 WM_CLASS 가 데스크톱 파일 이름과 같아야 셸이 이 앱의 창으로 알아본다
 GLib.set_prgname(APP_ID)
 

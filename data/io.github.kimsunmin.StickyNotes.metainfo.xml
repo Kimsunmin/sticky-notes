@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 앱 스토어(GNOME 소프트웨어, App Center)에 보이는 정보. 가장 위의 release 가 패키지 버전이다 -->
+<component type="desktop-application">
+  <id>io.github.kimsunmin.StickyNotes</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>Sticky Notes</name>
+  <name xml:lang="ko">스티커 메모</name>
+  <name xml:lang="zh_CN">便签</name>
+  <summary>Sticky notes that live on your desktop</summary>
+  <summary xml:lang="ko">바탕화면에 붙여 두는 스티커 메모</summary>
+  <summary xml:lang="zh_CN">贴在桌面上的便签</summary>
+  <developer id="io.github.kimsunmin">
+    <name>김선민</name>
+  </developer>
+
+  <description>
+    <p>
+      Desktop sticky notes for GNOME on Wayland. Notes stay on your wallpaper on every workspace,
+      below your windows, and come to the front while you use them.
+    </p>
+    <p>
+      The default theme looks like a terminal, with scanlines and glow. Paper sticky-note themes
+      and theme files you make yourself are one click away.
+    </p>
+    <ul>
+      <li>Shown on every workspace, below other windows</li>
+      <li>Remembers each note's position and size</li>
+      <li>Six terminal themes, five paper themes and custom theme files</li>
+      <li>Clickable checklists</li>
+      <li>Undo and redo, and font size per note</li>
+      <li>English, Korean and Simplified Chinese interface</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.kimsunmin.StickyNotes.desktop</launchable>
+  <url type="homepage">https://github.com/Kimsunmin/sticky-notes</url>
+  <url type="bugtracker">https://github.com/Kimsunmin/sticky-notes/issues</url>
+  <url type="vcs-browser">https://github.com/Kimsunmin/sticky-notes</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Terminal and paper themes on the desktop</caption>
+      <image>https://raw.githubusercontent.com/Kimsunmin/sticky-notes/main/docs/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+
+  <content_rating type="oars-1.1"/>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <releases>
+    <release version="1.0.0" date="2026-11-16">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

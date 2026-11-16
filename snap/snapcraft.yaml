@@ -1,0 +1,55 @@
+name: sticky-notes
+title: Sticky Notes
+summary: Sticky notes that live on your desktop, terminal-style by default
+description: |
+  Desktop sticky notes for GNOME on Wayland. Notes stay on your wallpaper on
+  every workspace, below your windows, and come to the front while you use them.
+
+  The default theme looks like a terminal, with scanlines and glow. Paper
+  sticky-note themes and theme files you make yourself are one click away.
+
+  - Shown on every workspace, below other windows
+  - Remembers each note's position and size
+  - Six terminal themes, five paper themes and custom theme files
+  - Clickable checklists, undo and redo, font size per note
+  - English, Korean and Simplified Chinese interface
+adopt-info: sticky-notes
+base: core24
+grade: stable
+confinement: strict
+license: MIT
+website: https://github.com/Kimsunmin/sticky-notes
+source-code: https://github.com/Kimsunmin/sticky-notes
+issues: https://github.com/Kimsunmin/sticky-notes/issues
+icon: data/io.github.kimsunmin.StickyNotes.svg
+
+slots:
+  # 앱을 하나만 띄우려고(GtkApplication) 세션 버스에 앱 ID 이름을 쓴다
+  dbus-app:
+    interface: dbus
+    bus: session
+    name: io.github.kimsunmin.StickyNotes
+
+apps:
+  sticky-notes:
+    command: usr/bin/sticky-notes
+    extensions: [gnome]
+    desktop: usr/share/applications/io.github.kimsunmin.StickyNotes.desktop
+    common-id: io.github.kimsunmin.StickyNotes
+    slots: [dbus-app]
+    # 바탕화면에 깔리도록 XWayland 로 띄우므로 X11 이 필요하다
+    plugs: [x11]
+
+parts:
+  sticky-notes:
+    plugin: nil
+    source: .
+    stage-packages: [python3, python3-gi]
+    override-pull: |
+      craftctl default
+      craftctl set version="$(packaging/version.sh)"
+    override-build: |
+      packaging/stage.sh "$CRAFT_PART_INSTALL"
+      # snap 밖의 아이콘 테마에는 이 아이콘이 없으므로 snap 안의 경로로 가리킨다
+      sed -i 's|^Icon=.*|Icon=${SNAP}/usr/share/icons/hicolor/scalable/apps/io.github.kimsunmin.StickyNotes.svg|' \
+        "$CRAFT_PART_INSTALL/usr/share/applications/io.github.kimsunmin.StickyNotes.desktop"

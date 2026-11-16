@@ -22,7 +22,7 @@
 ## 系统要求
 
 - Linux + GNOME Wayland 会话（通过 XWayland 运行）。已在 Ubuntu 26.04 / GNOME 50 上测试。
-- Python 3、PyGObject、GTK 3
+- .deb 和 snap 会自带所需的一切。从源码运行需要 Python 3、PyGObject 和 GTK 3，Ubuntu 桌面版已默认安装：
 
 ```sh
 sudo apt install python3-gi gir1.2-gtk-3.0
@@ -31,6 +31,37 @@ sudo apt install python3-gi gir1.2-gtk-3.0
 字体使用 `Ubuntu Sans Mono`，中日韩文字使用与系统语言对应的 `Noto Sans Mono CJK`（`fonts-noto-cjk`），中文环境下为 SC 版本。两者都没有时使用系统等宽字体。
 
 ## 安装
+
+### Ubuntu / Debian：.deb（推荐）
+
+下载 [sticky-notes.deb](https://github.com/Kimsunmin/sticky-notes/releases/latest/download/sticky-notes.deb) 并打开，或运行：
+
+```sh
+wget https://github.com/Kimsunmin/sticky-notes/releases/latest/download/sticky-notes.deb
+sudo apt install ./sticky-notes.deb
+```
+
+登录时自动启动：
+
+```sh
+mkdir -p ~/.config/autostart
+cp /usr/share/applications/io.github.kimsunmin.StickyNotes.desktop ~/.config/autostart/
+```
+
+### Snap Store
+
+```sh
+sudo snap install sticky-notes
+```
+
+snap 版把便签和主题保存在自己的文件夹 `~/snap/sticky-notes/current/` 中（见[数据](#数据)）。登录时自动启动：
+
+```sh
+mkdir -p ~/.config/autostart
+cp /var/lib/snapd/desktop/applications/sticky-notes_sticky-notes.desktop ~/.config/autostart/
+```
+
+### 从源码安装
 
 ```sh
 git clone https://github.com/Kimsunmin/sticky-notes.git
@@ -43,17 +74,23 @@ cd sticky-notes
 
 ## 更新
 
+- **.deb**：下载新的 `sticky-notes.deb` 并用同样的方法安装，然后运行 `sticky-notes --quit` 退出应用再重新打开。
+- **Snap**：自动更新。如果应用正在运行，会在关闭后应用更新。
+- **源码**：
+
 ```sh
 cd sticky-notes
 git pull
 ./install.sh
 ```
 
-`install.sh` 会重新注册应用（如果开启了自动启动，也会一起更新），并用新代码重新启动正在运行的应用。便签单独保存，不会丢失。
+`install.sh` 会重新注册应用（如果开启了自动启动，也会一起更新），并用新代码重新启动正在运行的应用。
+
+无论哪种方式，便签都单独保存，不会丢失。
 
 ## 使用方法
 
-在应用网格中启动 **便签**，或运行 `./sticky_notes.py`。
+在应用网格中启动 **便签**，或运行 `sticky-notes`（从源码安装时为 `./sticky_notes.py`）。
 
 ### 鼠标
 
@@ -92,7 +129,7 @@ git pull
 用 `--new` 参数启动会把便签调到前面并新建一张便签。也可以右键点击应用图标，选择 **新建便签**。把它设成 GNOME 快捷键会很方便：
 
 > 设置 → 键盘 → 键盘快捷键 → 自定义快捷键
-> 命令：`/仓库/路径/sticky_notes.py --new`
+> 命令：`sticky-notes --new`（从源码安装时为 `/仓库/路径/sticky_notes.py --new`）
 
 ### 便签语法
 
@@ -116,7 +153,7 @@ git pull
 
 ### 制作自己的主题
 
-在 `~/.config/sticky-notes/themes/` 文件夹中放一个 `名称.theme` 文件，就会多出一个主题。`[~]` 菜单底部的 **打开主题文件夹** 可以打开这个文件夹。
+在 `~/.config/sticky-notes/themes/` 文件夹（snap 版为 `~/snap/sticky-notes/current/.config/sticky-notes/themes/`）中放一个 `名称.theme` 文件，就会多出一个主题。`[~]` 菜单底部的 **打开主题文件夹** 可以打开这个文件夹。
 
 ```ini
 # ~/.config/sticky-notes/themes/ocean.theme
@@ -153,7 +190,7 @@ GNOME Wayland 不允许应用把自己的窗口放到其他窗口下方。sticky
 
 ### 便签保存在哪里？怎样备份？
 
-所有便签都保存在 `~/.local/share/sticky-notes/notes.json` 这一个文件中。复制这个文件即可备份。
+所有便签都保存在 `~/.local/share/sticky-notes/notes.json` 这一个文件中（snap 版为 `~/snap/sticky-notes/current/.local/share/sticky-notes/notes.json`）。复制这个文件即可备份。
 
 ### 能在 KDE Plasma、Xfce 或 X11 会话中使用吗？
 
@@ -161,7 +198,12 @@ GNOME Wayland 不允许应用把自己的窗口放到其他窗口下方。sticky
 
 ## 数据
 
-所有便签都保存在 `~/.local/share/sticky-notes/notes.json` 中，修改后 0.5 秒内保存。如果文件无法读取，不会覆盖它，而是改名为 `notes.broken-<时间>.json` 保留下来。
+| | 便签 | 自制主题 |
+|---|---|---|
+| .deb、源码 | `~/.local/share/sticky-notes/notes.json` | `~/.config/sticky-notes/themes/` |
+| Snap | `~/snap/sticky-notes/current/.local/share/sticky-notes/notes.json` | `~/snap/sticky-notes/current/.config/sticky-notes/themes/` |
+
+修改后 0.5 秒内保存。如果便签文件无法读取，不会覆盖它，而是改名为 `notes.broken-<时间>.json` 保留下来。
 
 ## 工作原理
 
@@ -185,23 +227,41 @@ GNOME Wayland 不允许应用把自己的窗口放到其他窗口下方。sticky
 
 ## 卸载
 
+- **.deb**：`sudo apt remove sticky-notes`。如果开启了自动启动，再删除 `~/.config/autostart/io.github.kimsunmin.StickyNotes.desktop`。
+- **Snap**：`sudo snap remove sticky-notes`。这会一并删除保存便签的 snap 文件夹，如需保留请先复制 `notes.json`。
+- **源码**：
+
 ```sh
 ./sticky_notes.py --quit   # 如果正在运行则退出
-rm -f ~/.local/share/applications/com.kimsunmin.StickyNotes.desktop \
-   ~/.local/share/icons/hicolor/scalable/apps/com.kimsunmin.StickyNotes.svg \
-   ~/.config/autostart/com.kimsunmin.StickyNotes.desktop
-rm -r ~/.local/share/sticky-notes          # 同时删除便签
-rm -r ~/.config/sticky-notes               # 同时删除主题
+rm -f ~/.local/share/applications/io.github.kimsunmin.StickyNotes.desktop \
+   ~/.local/share/icons/hicolor/scalable/apps/io.github.kimsunmin.StickyNotes.svg \
+   ~/.config/autostart/io.github.kimsunmin.StickyNotes.desktop
+```
+
+同时删除便签和主题（.deb、源码）：
+
+```sh
+rm -r ~/.local/share/sticky-notes ~/.config/sticky-notes
 ```
 
 ## 项目结构
 
 ```text
 sticky_notes.py   整个应用（单个文件）
-install.sh        安装、更新、--autostart 自动启动
-data/             桌面文件模板、图标
+install.sh        源码安装、更新、--autostart 自动启动
+data/             桌面文件模板、图标、AppStream 元信息
 docs/             截图
+packaging/        .deb 构建脚本
+snap/             snap 软件包
+.github/          发布工作流
 ```
+
+## 发布方法
+
+1. 在 `data/io.github.kimsunmin.StickyNotes.metainfo.xml` 顶部添加 `<release version="x.y.z" date="…">` 条目并提交。版本号只写在这里。
+2. 推送标签：`git tag vx.y.z && git push origin vx.y.z`
+
+GitHub Actions 会构建 `sticky-notes.deb` 和 snap 并附加到发布页。如果仓库密钥中设置了 `SNAPCRAFT_STORE_CREDENTIALS`，还会把 snap 发布到 Snap Store。
 
 ## 许可证
 

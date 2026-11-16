@@ -7,14 +7,14 @@ Comment=Sticky notes that live on your desktop, with a terminal theme
 Comment[ko]=바탕화면에 붙여 두는 스티커 메모, 기본 테마는 터미널
 Comment[zh_CN]=贴在桌面上的便签，默认终端主题
 Exec=@EXEC@
-Icon=com.kimsunmin.StickyNotes
+Icon=io.github.kimsunmin.StickyNotes
 Terminal=false
 Categories=Utility;GTK;
 Keywords=note;notes;memo;sticky;post-it;desktop;terminal;
 Keywords[ko]=메모;스티커;포스트잇;바탕화면;터미널;
 Keywords[zh_CN]=便签;便利贴;笔记;桌面;终端;
 StartupNotify=true
-StartupWMClass=com.kimsunmin.StickyNotes
+StartupWMClass=io.github.kimsunmin.StickyNotes
 Actions=new-note;
 
 [Desktop Action new-note]

@@ -22,7 +22,7 @@
 ## Requirements
 
 - Linux with a GNOME Wayland session (runs through XWayland). Tested on Ubuntu 26.04 with GNOME 50.
-- Python 3, PyGObject, GTK 3
+- The .deb and the snap bring everything they need. To run from source you need Python 3, PyGObject and GTK 3, which come with Ubuntu desktop:
 
 ```sh
 sudo apt install python3-gi gir1.2-gtk-3.0
@@ -31,6 +31,37 @@ sudo apt install python3-gi gir1.2-gtk-3.0
 The font is `Ubuntu Sans Mono`. CJK text uses `Noto Sans Mono CJK` (`fonts-noto-cjk`) in the variant that matches your language. If neither is installed, the system monospace font is used.
 
 ## Install
+
+### Ubuntu / Debian: .deb (recommended)
+
+Download [sticky-notes.deb](https://github.com/Kimsunmin/sticky-notes/releases/latest/download/sticky-notes.deb) and open it, or run:
+
+```sh
+wget https://github.com/Kimsunmin/sticky-notes/releases/latest/download/sticky-notes.deb
+sudo apt install ./sticky-notes.deb
+```
+
+To start it on login:
+
+```sh
+mkdir -p ~/.config/autostart
+cp /usr/share/applications/io.github.kimsunmin.StickyNotes.desktop ~/.config/autostart/
+```
+
+### Snap Store
+
+```sh
+sudo snap install sticky-notes
+```
+
+The snap keeps your notes and themes in its own folder, `~/snap/sticky-notes/current/` (see [Data](#data)). To start it on login:
+
+```sh
+mkdir -p ~/.config/autostart
+cp /var/lib/snapd/desktop/applications/sticky-notes_sticky-notes.desktop ~/.config/autostart/
+```
+
+### From source
 
 ```sh
 git clone https://github.com/Kimsunmin/sticky-notes.git
@@ -43,17 +74,23 @@ cd sticky-notes
 
 ## Update
 
+- **.deb**: download the new `sticky-notes.deb` and install it the same way. Then restart the app: run `sticky-notes --quit` and open it again.
+- **Snap**: updates automatically. If the app is running, the update is applied after you close it.
+- **From source**:
+
 ```sh
 cd sticky-notes
 git pull
 ./install.sh
 ```
 
-`install.sh` re-registers the app (and autostart, if it is on) and restarts the running app with the new code. Your notes are stored separately and are kept.
+`install.sh` re-registers the app (and autostart, if it is on) and restarts the running app with the new code.
+
+In every case your notes are stored separately and are kept.
 
 ## Usage
 
-Launch **Sticky Notes** from the app grid, or run `./sticky_notes.py`.
+Launch **Sticky Notes** from the app grid, or run `sticky-notes` (`./sticky_notes.py` if you installed from source).
 
 ### Mouse
 
@@ -92,7 +129,7 @@ Launch the app again while it is running (for example, click its icon in the app
 `--new` brings the notes forward and opens a new note. You can also right-click the app icon and choose **New Note**. It's handy as a GNOME keyboard shortcut:
 
 > Settings → Keyboard → Keyboard Shortcuts → Custom Shortcuts
-> Command: `/path/to/sticky-notes/sticky_notes.py --new`
+> Command: `sticky-notes --new` (from source: `/path/to/sticky-notes/sticky_notes.py --new`)
 
 ### Note syntax
 
@@ -116,7 +153,7 @@ Click `[~]` to pick a theme from a list with color swatches, or press Ctrl+T to 
 
 ### Make your own theme
 
-Put a `name.theme` file in `~/.config/sticky-notes/themes/` and it shows up as a theme. **Open themes folder** at the bottom of the `[~]` menu opens this folder.
+Put a `name.theme` file in `~/.config/sticky-notes/themes/` (snap: `~/snap/sticky-notes/current/.config/sticky-notes/themes/`) and it shows up as a theme. **Open themes folder** at the bottom of the `[~]` menu opens this folder.
 
 ```ini
 # ~/.config/sticky-notes/themes/ocean.theme
@@ -153,7 +190,7 @@ Pick it in the Activities overview or Alt+Tab, or launch the app again to bring 
 
 ### Where are my notes stored? How do I back them up?
 
-All notes are in one file, `~/.local/share/sticky-notes/notes.json`. Copy that file to back them up.
+All notes are in one file, `~/.local/share/sticky-notes/notes.json` (snap: `~/snap/sticky-notes/current/.local/share/sticky-notes/notes.json`). Copy that file to back them up.
 
 ### Does it work on KDE Plasma, Xfce or an X11 session?
 
@@ -161,7 +198,12 @@ It is developed and tested only on GNOME 50 (Ubuntu 26.04, Wayland). It relies o
 
 ## Data
 
-Every note is saved to `~/.local/share/sticky-notes/notes.json`, within half a second of a change. If the file can't be read, it is not overwritten: it is moved aside to `notes.broken-<time>.json`.
+| | Notes | Your themes |
+|---|---|---|
+| .deb, from source | `~/.local/share/sticky-notes/notes.json` | `~/.config/sticky-notes/themes/` |
+| Snap | `~/snap/sticky-notes/current/.local/share/sticky-notes/notes.json` | `~/snap/sticky-notes/current/.config/sticky-notes/themes/` |
+
+Notes are saved within half a second of a change. If the notes file can't be read, it is not overwritten: it is moved aside to `notes.broken-<time>.json`.
 
 ## How it works
 
@@ -185,23 +227,41 @@ With GTK's client-side decorations, mutter places the window off by the width of
 
 ## Uninstall
 
+- **.deb**: `sudo apt remove sticky-notes`. If you turned on autostart, also delete `~/.config/autostart/io.github.kimsunmin.StickyNotes.desktop`.
+- **Snap**: `sudo snap remove sticky-notes`. This also deletes the snap's folder with your notes, so copy `notes.json` first if you want to keep them.
+- **From source**:
+
 ```sh
 ./sticky_notes.py --quit   # quit the app if it is running
-rm -f ~/.local/share/applications/com.kimsunmin.StickyNotes.desktop \
-   ~/.local/share/icons/hicolor/scalable/apps/com.kimsunmin.StickyNotes.svg \
-   ~/.config/autostart/com.kimsunmin.StickyNotes.desktop
-rm -r ~/.local/share/sticky-notes          # also delete your notes
-rm -r ~/.config/sticky-notes               # also delete your themes
+rm -f ~/.local/share/applications/io.github.kimsunmin.StickyNotes.desktop \
+   ~/.local/share/icons/hicolor/scalable/apps/io.github.kimsunmin.StickyNotes.svg \
+   ~/.config/autostart/io.github.kimsunmin.StickyNotes.desktop
+```
+
+To also delete your notes and themes (.deb, from source):
+
+```sh
+rm -r ~/.local/share/sticky-notes ~/.config/sticky-notes
 ```
 
 ## Project layout
 
 ```text
 sticky_notes.py   the whole app (single file)
-install.sh        install, update, --autostart
-data/             desktop file template, icon
+install.sh        install from source, update, --autostart
+data/             desktop file template, icon, AppStream metainfo
 docs/             screenshots
+packaging/        .deb build scripts
+snap/             snap package
+.github/          release workflow
 ```
+
+## Releasing
+
+1. Add a `<release version="x.y.z" date="…">` entry at the top of `data/io.github.kimsunmin.StickyNotes.metainfo.xml` and commit it. This is the only place the version is written.
+2. Push a tag: `git tag vx.y.z && git push origin vx.y.z`
+
+GitHub Actions builds `sticky-notes.deb` and the snap and attaches them to the release. If the repository secret `SNAPCRAFT_STORE_CREDENTIALS` is set, the snap is also published to the Snap Store.
 
 ## License
 
