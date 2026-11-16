@@ -125,12 +125,12 @@ def line_tag(line):
 
 
 class History:
-    """TextBuffer 편집 기록. 글자마다가 아니라 단어 단위로 묶어서 되돌린다.
+    """TextBuffer 편집 기록. 사용자 동작 하나(글자 하나 입력, 붙여넣기 한 번 등)씩 되돌린다.
 
     버퍼 전체를 복사하지 않고 바뀐 부분(종류, 위치, 글자)만 저장하므로 메모가 길어도 가볍다.
     """
 
-    LIMIT = 500
+    LIMIT = 3000
 
     def __init__(self, buffer):
         self.buffer = buffer
@@ -139,7 +139,6 @@ class History:
         self._action = []  # 사용자 동작 하나(키 입력, 붙여넣기 등) 동안 모은 변경
         self._depth = 0
         self._applying = False
-        self._can_merge = False
         # 버퍼가 바뀌기 전에 불려야 지워질 글자를 읽을 수 있으므로 connect_after 가 아니다
         buffer.connect("insert-text", self._on_insert)
         buffer.connect("delete-range", self._on_delete)
@@ -177,7 +176,6 @@ class History:
         self.buffer.end_user_action()
         self.buffer.place_cursor(self.buffer.get_iter_at_offset(cursor))
         self._applying = False
-        self._can_merge = False
 
     def _on_insert(self, _buffer, location, text, _length):
         self._record(("insert", location.get_offset(), text))
@@ -204,35 +202,9 @@ class History:
 
     def _push(self, changes):
         self._redo.clear()
-        typed = len(changes) == 1 and len(changes[0][2]) == 1
-        if typed and self._can_merge:
-            merged = self._merge(self._undo[-1][0], changes[0])
-            if merged:
-                self._undo[-1] = [merged]
-                return
         self._undo.append(changes)
         if len(self._undo) > self.LIMIT:
             del self._undo[0]
-        self._can_merge = typed
-
-    @staticmethod
-    def _merge(previous, change):
-        kind, offset, text = previous
-        new_kind, new_offset, char = change
-        if new_kind != kind or char == "\n":
-            return None
-        if kind == "insert":
-            # 단어를 치다가 공백이 오면 새 단계로 나눈다
-            if new_offset != offset + len(text) or (char.isspace() and not text[-1].isspace()):
-                return None
-            return kind, offset, text + char
-        if new_offset + 1 == offset:  # 백스페이스
-            if char.isspace() and not text[0].isspace():
-                return None
-            return kind, new_offset, char + text
-        if new_offset == offset:  # Delete 키
-            return kind, offset, text + char
-        return None
 
 
 def load_notes():
