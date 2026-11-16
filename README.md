@@ -1,100 +1,122 @@
 # sticky-notes
 
-바탕화면에 붙여 두는 **스티커 메모**. 기본 테마는 터미널이고, 종이 포스트잇 테마와 직접 만든 테마도 쓸 수 있습니다. GNOME(Wayland)용으로 만들었습니다.
+**English** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md)
 
-![스크린샷](docs/screenshot.png)
+**Desktop sticky notes for Linux (GNOME, Wayland).** Notes stay on your wallpaper on every workspace, below your windows, and come to the front when you use them. The default theme looks like a terminal; paper sticky-note themes and themes you make yourself are one click away.
 
-## 특징
+![Sticky notes on the Linux desktop: terminal and paper themes](docs/screenshot.png)
 
-- **바탕화면 위젯처럼 동작**: 메모는 다른 창 아래에 깔리고 모든 작업 공간에 보입니다. 메모를 누르거나 개요·Alt+Tab에서 고르면 그 메모만 다른 창 위로 올라오고, 다른 곳을 누르면 다시 내려갑니다.
-- **위치·크기 기억**: 다시 실행하거나 다시 로그인해도 메모가 그 자리에 그 크기로 돌아옵니다.
-- **터미널 느낌**: 고정폭 글꼴, vim 스타일 상태줄, 기본 테마는 형광 글자에 스캔라인이 그어진 반투명 배경.
-- **테마**: 터미널 6가지(green, amber, cyan, magenta, red, white), 종이 포스트잇 5가지(yellow, pink, sky, mint, lilac). [테마 파일](#테마-만들기)로 직접 만들 수도 있습니다.
-- **체크리스트**: `[ ]`를 클릭하면 `[x]`가 되고, 끝난 줄에는 취소선이 그어집니다.
-- **실행 취소/다시 실행**: 한 글자씩 되돌립니다. 붙여넣기와 체크박스 토글은 한 번에 되돌립니다.
-- **메모마다 글자 크기 조절**: 8~32pt.
-- **삭제 확인**: 내용이 있는 메모는 `rm -i`처럼 `[y/N]`으로 한 번 더 묻습니다.
-- **PEEK**: 창에 가려진 메모를 잠깐 앞으로 꺼내 볼 수 있습니다.
+## Features
 
-## 요구 사항
+- **Lives on the desktop**: notes sit below other windows and show on every workspace. Click a note, or pick it in the Activities overview or Alt+Tab, and that note comes to the front. Click elsewhere and it goes back down.
+- **Remembers position and size** across restarts and logins.
+- **Themes**: six terminal themes with CRT scanlines and glow, five paper sticky-note themes, and [your own theme files](#make-your-own-theme).
+- **Terminal feel**: monospace font, file-name title bar, vim-style status line.
+- **Checklists**: click `[ ]` to make it `[x]`; done lines are struck through.
+- **Undo and redo**, one character at a time.
+- **Font size per note**: 8–32 pt.
+- **Delete confirmation**: notes with text ask `[y/N]` first, like `rm -i`.
+- **PEEK**: bring every note above your windows for a quick look.
+- **English, Korean and Simplified Chinese** interface, following your system language.
 
-- Linux + GNOME Wayland 세션(XWayland 사용). Ubuntu 26.04 / GNOME 50에서 테스트했습니다.
+## Requirements
+
+- Linux with a GNOME Wayland session (runs through XWayland). Tested on Ubuntu 26.04 with GNOME 50.
 - Python 3, PyGObject, GTK 3
 
 ```sh
 sudo apt install python3-gi gir1.2-gtk-3.0
 ```
 
-글꼴은 `Ubuntu Sans Mono`를 쓰고 한글은 `Noto Sans Mono CJK KR`(`fonts-noto-cjk`)로 표시합니다. 둘 다 없으면 시스템 고정폭 글꼴을 씁니다.
+The font is `Ubuntu Sans Mono`. CJK text uses `Noto Sans Mono CJK` (`fonts-noto-cjk`) in the variant that matches your language. If neither is installed, the system monospace font is used.
 
-## 설치
+## Install
 
 ```sh
 git clone https://github.com/Kimsunmin/sticky-notes.git
 cd sticky-notes
-./install.sh              # 앱 목록에 등록
-./install.sh --autostart  # 로그인할 때 자동 실행도 켜기
+./install.sh              # add to the app grid
+./install.sh --autostart  # also start on login
 ```
 
-`install.sh`는 `~/.local/share/applications`에 데스크톱 파일을, `~/.local/share/icons`에 아이콘을 넣습니다. 데스크톱 파일은 저장소 안의 `sticky_notes.py`를 실행하므로, 설치한 뒤에는 저장소 폴더를 옮기지 마세요. 옮겼다면 `./install.sh`를 다시 실행하면 됩니다.
+`install.sh` puts a desktop file in `~/.local/share/applications` and an icon in `~/.local/share/icons`. The desktop file runs `sticky_notes.py` from the cloned folder, so don't move the folder after installing. If you do, run `./install.sh` again.
 
-## 사용법
+## Update
 
-앱 목록에서 **스티커 메모**를 실행하거나 `./sticky_notes.py`를 실행합니다.
+```sh
+cd sticky-notes
+git pull
+./install.sh
+```
 
-### 마우스
+`install.sh` re-registers the app (and autostart, if it is on) and restarts the running app with the new code. Your notes are stored separately and are kept.
 
-| 동작 | 방법 |
+## Usage
+
+Launch **Sticky Notes** from the app grid, or run `./sticky_notes.py`.
+
+### Mouse
+
+| Action | How |
 |---|---|
-| 옮기기 | 제목줄을 끌기 |
-| 크기 조절 | 오른쪽 아래 `◢`를 끌기 |
-| 새 메모 / 테마 고르기 / 고정 / 삭제 | 제목줄의 `[+]` `[~]` `[^]` `[x]` |
-| 체크박스 토글 | `[ ]` 또는 `[x]`를 클릭 |
+| Move | Drag the title bar |
+| Resize | Drag `◢` in the bottom-right corner |
+| New note / theme / pin / delete | `[+]` `[~]` `[^]` `[x]` in the title bar |
+| Toggle a checkbox | Click `[ ]` or `[x]` |
 
-### 단축키
+### Keyboard shortcuts
 
-| 키 | 동작 |
+| Keys | Action |
 |---|---|
-| Ctrl+N | 새 메모 |
-| Ctrl+T | 다음 테마로 바꾸기 |
-| Ctrl+P | 다른 창 위에 고정 / 해제 |
-| Ctrl+W | 메모 삭제 (`y`로 확인, 다른 키는 취소) |
-| Ctrl+Z | 실행 취소 |
-| Ctrl+Shift+Z, Ctrl+Y | 다시 실행 |
-| Ctrl+= / Ctrl+- / Ctrl+0 | 글자 크게 / 작게 / 기본(12pt) |
-| Ctrl+마우스 휠 | 글자 크기 조절 |
+| Ctrl+N | New note |
+| Ctrl+T | Next theme |
+| Ctrl+P | Keep above other windows (pin) / unpin |
+| Ctrl+W | Delete note (`y` to confirm, any other key cancels) |
+| Ctrl+Z | Undo |
+| Ctrl+Shift+Z, Ctrl+Y | Redo |
+| Ctrl+= / Ctrl+- / Ctrl+0 | Bigger / smaller / default (12 pt) font |
+| Ctrl+mouse wheel | Change font size |
 
-### 상태줄 모드
+### Status line modes
 
-| 모드 | 뜻 |
+| Mode | Meaning |
 |---|---|
-| `DESK` | 바탕화면에 깔려 있음 (다른 창 아래, 포커스를 받은 동안만 위) |
-| `PIN` | 다른 창 위에 고정됨 |
-| `PEEK` | 잠깐 앞으로 꺼내 보는 중 |
+| `DESK` | On the desktop, below other windows (in front only while focused) |
+| `PIN` | Kept above other windows |
+| `PEEK` | Brought to the front for a quick look |
 
-### 가려진 메모 꺼내 보기 (PEEK)
+### Bring hidden notes to the front (PEEK)
 
-앱이 이미 실행 중일 때 다시 실행하면(앱 목록에서 아이콘 클릭 등) 모든 메모가 다른 창 위로 올라옵니다. 메모 밖을 클릭하거나 한 번 더 실행하면 다시 바탕화면으로 내려갑니다.
+Launch the app again while it is running (for example, click its icon in the app grid) and every note comes above your windows. Click outside the notes, or launch it once more, and they go back to the desktop.
 
-`--new` 옵션으로 실행하면 메모를 앞으로 꺼내면서 새 메모를 엽니다. 앱 아이콘을 우클릭해 **새 메모**를 골라도 됩니다. 이 명령을 GNOME 단축키로 등록해 두면 편합니다.
+`--new` brings the notes forward and opens a new note. You can also right-click the app icon and choose **New Note**. It's handy as a GNOME keyboard shortcut:
 
-> 설정 → 키보드 → 키보드 바로 가기 → 사용자 지정 바로 가기
-> 명령: `/저장소/경로/sticky_notes.py --new`
+> Settings → Keyboard → Keyboard Shortcuts → Custom Shortcuts
+> Command: `/path/to/sticky-notes/sticky_notes.py --new`
 
-### 메모 문법
+### Note syntax
 
 ```text
-# 제목              굵게 표시
-[ ] 할 일           클릭하면 [x]
-- [x] 끝난 일       취소선
-* [ ] 이것도 체크박스
+# Heading           bold
+[ ] todo            click to make it [x]
+- [x] done          struck through
+* [ ] also a checkbox
 ```
 
-제목줄의 `~/notes/첫-줄.txt`는 첫 줄로 만든 표시용 이름이고, 실제 파일은 아닙니다.
+The title bar shows `~/notes/first-line.txt`. It is a display name made from the first line, not a real file.
 
-### 테마 만들기
+## Themes
 
-`~/.config/sticky-notes/themes/` 폴더에 `이름.theme` 파일을 넣으면 테마가 하나 생깁니다. `[~]` 메뉴의 **테마 폴더 열기**로 이 폴더를 열 수 있습니다.
+| Kind | Themes |
+|---|---|
+| Terminal (CRT scanlines and glow) | `green` (default), `amber`, `cyan`, `magenta`, `red`, `white` |
+| Paper | `yellow`, `pink`, `sky`, `mint`, `lilac` |
+
+Click `[~]` to pick a theme from a list with color swatches, or press Ctrl+T to switch to the next one. Each note keeps its own theme.
+
+### Make your own theme
+
+Put a `name.theme` file in `~/.config/sticky-notes/themes/` and it shows up as a theme. **Open themes folder** at the bottom of the `[~]` menu opens this folder.
 
 ```ini
 # ~/.config/sticky-notes/themes/ocean.theme
@@ -104,59 +126,83 @@ Background=#0b2a4a
 Crt=true
 ```
 
-| 키 | 뜻 |
+| Key | Meaning |
 |---|---|
-| `Foreground` | 글자색. `#rrggbb`, `rgb(…)`, `navy` 같은 CSS 색 이름을 쓸 수 있습니다. |
-| `Background` | 배경색 |
-| `Crt` | `true`면 터미널 테마처럼 스캔라인과 글자 번짐 효과를 넣고 배경을 조금 더 투명하게 합니다. 생략하면 `false`. |
+| `Foreground` | Text color. Any CSS color works: `#rrggbb`, `rgb(…)`, or a name like `navy`. |
+| `Background` | Background color |
+| `Crt` | `true` adds the terminal themes' scanlines and glow and makes the background a little more transparent. Defaults to `false`. |
 
-- 파일 이름(확장자 제외)이 테마 이름이 됩니다. 영문, 숫자, `-`, `_`만 쓸 수 있습니다.
-- 기본 테마와 이름이 같으면 기본 테마를 덮어씁니다.
-- 파일을 고친 뒤 `[~]` 메뉴를 다시 열면 바로 반영됩니다.
-- 읽을 수 없는 파일은 건너뛰고, 그 테마를 쓰던 메모는 `green`으로 보입니다. 파일을 고치면 원래 테마로 돌아옵니다.
+- The file name (without `.theme`) is the theme name. Use only letters, digits, `-` and `_`.
+- A theme with the same name as a built-in one replaces it.
+- After editing a file, open the `[~]` menu again to apply it.
+- Files that can't be read are skipped (the reason is printed to stderr). Notes using such a theme are shown in `green` until the file is fixed; their theme setting is not lost.
 
-## 데이터
+## FAQ
 
-모든 메모는 `~/.local/share/sticky-notes/notes.json` 한 파일에 저장됩니다. 바뀐 내용은 0.5초 안에 저장됩니다. 파일을 읽을 수 없으면 덮어쓰지 않고 `notes.broken-<시각>.json`으로 옮겨 둡니다.
+### How do I keep sticky notes on the desktop in GNOME on Wayland?
 
-## 동작 방식
+GNOME on Wayland doesn't let apps place their windows below other windows. sticky-notes runs through XWayland and uses standard X11 window hints, so its notes stay on the desktop below your windows, on every workspace. Install it and launch it; there is nothing to configure.
 
-GNOME Wayland에서는 앱이 자기 창의 위치를 정하거나 "항상 아래에 두기" 같은 상태를 요청할 수 없습니다. 그래서 GTK 3을 X11 백엔드로 띄워(XWayland) 다음 X11 창 힌트를 씁니다.
+### Why do notes show up in Alt+Tab and the dock?
 
-- `_NET_WM_STATE_BELOW` / `ABOVE`: 바탕화면 / 고정·포커스
-- `_NET_WM_STATE_STICKY`: 모든 작업 공간
-- Motif 힌트에서 최대화·최소화 제거: 화면 가장자리로 끌어도 타일링되지 않음
+In GNOME, one window hint hides a window from the dock, Alt+Tab and the Activities overview together. Notes stay visible in the overview so you can find them there, which means they also appear in Alt+Tab and the dock. Whichever note you pick comes to the front.
 
-`_NET_WM_STATE_SKIP_TASKBAR`는 쓰지 않습니다. GNOME은 이 힌트가 붙은 창을 독과 Alt+Tab뿐 아니라 개요에서도 숨기기 때문입니다. 그래서 메모가 개요에 보이는 대신 독과 Alt+Tab에도 나옵니다.
+### A note is covered by other windows. How do I see it?
 
-GTK의 창 장식(CSD)을 쓰면 mutter가 그림자 폭만큼 어긋나게 배치해서 실행할 때마다 위치가 밀립니다. 그래서 장식 없는 RGBA 창에 테두리와 둥근 모서리를 직접 그립니다.
+Pick it in the Activities overview or Alt+Tab, or launch the app again to bring every note forward ([PEEK](#bring-hidden-notes-to-the-front-peek)). Press Ctrl+P on a note to keep it above other windows all the time.
 
-## 알려진 제한
+### Where are my notes stored? How do I back them up?
 
-- 바탕화면 보기(Super+D)는 일반 창을 모두 숨기는 기능이라 메모도 함께 숨겨질 수 있습니다.
-- XWayland 앱이라 분수 배율(125% 등)에서는 흐리게 보일 수 있습니다.
-- 창 그림자가 없고, 크기는 `◢` 손잡이로만 조절할 수 있습니다.
-- 실행 취소 기록은 메모리에만 있어서 앱을 다시 시작하면 사라집니다.
-- 마지막 메모를 삭제하면 앱이 종료됩니다. 앱을 다시 실행하면 새 메모가 열립니다.
+All notes are in one file, `~/.local/share/sticky-notes/notes.json`. Copy that file to back them up.
 
-## 제거
+### Does it work on KDE Plasma, Xfce or an X11 session?
+
+It is developed and tested only on GNOME 50 (Ubuntu 26.04, Wayland). It relies on standard EWMH window hints, so other desktops may work, but this is untested.
+
+## Data
+
+Every note is saved to `~/.local/share/sticky-notes/notes.json`, within half a second of a change. If the file can't be read, it is not overwritten: it is moved aside to `notes.broken-<time>.json`.
+
+## How it works
+
+On GNOME Wayland an app can't choose where its window goes or ask to be kept below other windows. So sticky-notes runs GTK 3 with the X11 backend (XWayland) and uses these X11 window hints:
+
+- `_NET_WM_STATE_BELOW` / `ABOVE`: on the desktop / pinned or focused
+- `_NET_WM_STATE_STICKY`: on every workspace
+- Motif hints without maximize and minimize: dragging a note to a screen edge doesn't tile it
+
+It doesn't use `_NET_WM_STATE_SKIP_TASKBAR`, because GNOME would then hide the notes from the Activities overview as well as from the dock and Alt+Tab.
+
+With GTK's client-side decorations, mutter places the window off by the width of its shadow, so a note would drift a little on every launch. Instead, each note is an undecorated RGBA window that draws its own border and rounded corners.
+
+## Known limitations
+
+- Show Desktop (Super+D) hides all normal windows, so it may hide the notes too.
+- As an XWayland app, it may look blurry with fractional scaling (125% and so on).
+- Notes have no window shadow, and can be resized only with the `◢` handle.
+- Undo history is kept in memory only, so it is gone after a restart.
+- Deleting the last note quits the app. Launch it again to get a new note.
+
+## Uninstall
 
 ```sh
+./sticky_notes.py --quit   # quit the app if it is running
 rm -f ~/.local/share/applications/com.kimsunmin.StickyNotes.desktop \
    ~/.local/share/icons/hicolor/scalable/apps/com.kimsunmin.StickyNotes.svg \
    ~/.config/autostart/com.kimsunmin.StickyNotes.desktop
-rm -r ~/.local/share/sticky-notes   # 메모 데이터까지 지우려면
+rm -r ~/.local/share/sticky-notes          # also delete your notes
+rm -r ~/.config/sticky-notes               # also delete your themes
 ```
 
-## 구조
+## Project layout
 
 ```text
-sticky_notes.py   앱 전체 (단일 파일)
-install.sh        앱 목록 등록, --autostart 로 자동 실행
-data/             데스크톱 파일 템플릿, 아이콘
-docs/             스크린샷
+sticky_notes.py   the whole app (single file)
+install.sh        install, update, --autostart
+data/             desktop file template, icon
+docs/             screenshots
 ```
 
-## 라이선스
+## License
 
 [MIT](LICENSE)
