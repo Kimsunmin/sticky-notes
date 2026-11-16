@@ -29,7 +29,7 @@ sudo apt install python3-gi gir1.2-gtk-3.0
 ## 설치
 
 ```sh
-git clone <저장소 주소> sticky-notes
+git clone https://github.com/Kimsunmin/sticky-notes.git
 cd sticky-notes
 ./install.sh              # 앱 목록에 등록
 ./install.sh --autostart  # 로그인할 때 자동 실행도 켜기
