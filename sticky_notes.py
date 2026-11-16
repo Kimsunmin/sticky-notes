@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""바탕화면에 붙여 두는 터미널 감성 스티커 메모."""
+"""바탕화면에 붙여 두는 스티커 메모. 기본 테마는 터미널이다."""
 
 import json
 import os
@@ -47,16 +47,54 @@ THEMES = {
 DEFAULT_THEME = "green"
 # 테마 이름은 CSS 클래스에 들어가므로 이 글자만 쓴다
 THEME_NAME = re.compile(r"[A-Za-z0-9_-]+")
-FONT = '"Ubuntu Sans Mono", "Noto Sans Mono CJK KR", monospace'
+# 화면 문구는 영어가 기본이고, 시스템 언어가 한국어·중국어(간체)면 바꿔 보여 준다
+TRANSLATIONS = {
+    "ko": {
+        "New note (Ctrl+N)": "새 메모 (Ctrl+N)",
+        "Theme (Ctrl+T: next theme)": "테마 (Ctrl+T: 다음 테마)",
+        "Keep above other windows (Ctrl+P)": "다른 창 위에 고정 (Ctrl+P)",
+        "Delete note (Ctrl+W)": "메모 삭제 (Ctrl+W)",
+        "Resize": "크기 조절",
+        "Open themes folder": "테마 폴더 열기",
+        "rm: remove '{}'? [y/N]": "'{}' 삭제할까요? [y/N]",
+    },
+    "zh_CN": {
+        "New note (Ctrl+N)": "新建便签 (Ctrl+N)",
+        "Theme (Ctrl+T: next theme)": "主题 (Ctrl+T：下一个主题)",
+        "Keep above other windows (Ctrl+P)": "固定在其他窗口上方 (Ctrl+P)",
+        "Delete note (Ctrl+W)": "删除便签 (Ctrl+W)",
+        "Resize": "调整大小",
+        "Open themes folder": "打开主题文件夹",
+        "rm: remove '{}'? [y/N]": "删除 '{}'？[y/N]",
+    },
+}
+TRANSLATIONS["zh_SG"] = TRANSLATIONS["zh_CN"]
+# 한자 모양이 언어마다 달라서 CJK 글꼴도 언어에 맞춘다
+CJK_FONTS = {"zh_CN": "SC", "zh_SG": "SC", "zh_TW": "TC", "zh_HK": "HK", "ja": "JP", "ko": "KR"}
+
+
+def _pick(table, default):
+    # ko_KR.UTF-8, ko_KR, ko, C 처럼 구체적인 이름부터 나온다
+    return next((table[name] for name in GLib.get_language_names() if name in table), default)
+
+
+_STRINGS = _pick(TRANSLATIONS, {})
+
+
+def tr(text):
+    return _STRINGS.get(text, text)
+
+
+FONT = f'"Ubuntu Sans Mono", "Noto Sans Mono CJK {_pick(CJK_FONTS, "KR")}", monospace'
 DEFAULT_FONT_SIZE = 12  # pt
 MIN_FONT_SIZE, MAX_FONT_SIZE = 8, 32
 
 # (글자, 툴팁, 액션)
 TITLE_BUTTONS = (
-    ("[+]", "새 메모 (Ctrl+N)", "app.new-note"),
-    ("[~]", "테마 (Ctrl+T 로 다음 테마)", "win.theme-menu"),
-    ("[^]", "다른 창 위에 고정 (Ctrl+P)", "win.toggle-pin"),
-    ("[x]", "메모 삭제 (Ctrl+W)", "win.delete"),
+    ("[+]", tr("New note (Ctrl+N)"), "app.new-note"),
+    ("[~]", tr("Theme (Ctrl+T: next theme)"), "win.theme-menu"),
+    ("[^]", tr("Keep above other windows (Ctrl+P)"), "win.toggle-pin"),
+    ("[x]", tr("Delete note (Ctrl+W)"), "win.delete"),
 )
 ACCELS = {
     "app.new-note": ["<Control>n"],
@@ -230,7 +268,7 @@ def load_notes():
         # 읽을 수 없는 파일을 빈 목록으로 덮어쓰지 않도록 옆으로 치워 둔다
         backup = DATA_FILE.with_name(f"notes.broken-{int(time.time())}.json")
         DATA_FILE.rename(backup)
-        print(f"메모 파일을 읽지 못해 {backup} 로 옮겼습니다.", file=sys.stderr)
+        print(f"Could not read the notes file; moved it to {backup}", file=sys.stderr)
         return []
 
 
@@ -244,7 +282,7 @@ def save_notes(notes):
 def read_theme(path):
     """[Theme] 그룹에 Foreground, Background, Crt(생략하면 false)를 적은 테마 파일을 읽는다."""
     if not THEME_NAME.fullmatch(path.stem):
-        raise ValueError("파일 이름에는 영문, 숫자, -, _ 만 쓸 수 있습니다")
+        raise ValueError("file name may only contain letters, digits, '-' and '_'")
     keyfile = GLib.KeyFile()
     keyfile.load_from_file(str(path), GLib.KeyFileFlags.NONE)
     colors = []
@@ -252,7 +290,7 @@ def read_theme(path):
         value = keyfile.get_string("Theme", key).strip()
         rgba = Gdk.RGBA()
         if not rgba.parse(value):
-            raise ValueError(f"{key} 색을 알 수 없습니다: {value}")
+            raise ValueError(f"unknown {key} color: {value}")
         # CSS 와 Pango 마크업에 그대로 넣으므로 #rrggbb 로 맞춰 둔다
         colors.append("#{:02x}{:02x}{:02x}".format(*(round(c * 255) for c in (rgba.red, rgba.green, rgba.blue))))
     crt = "Crt" in keyfile.get_keys("Theme")[0] and keyfile.get_boolean("Theme", "Crt")
@@ -266,7 +304,7 @@ def load_themes():
         try:
             themes[path.stem] = read_theme(path)
         except (GLib.Error, ValueError) as error:
-            print(f"테마 {path} 를 읽지 못했습니다: {error}", file=sys.stderr)
+            print(f"Skipping theme {path}: {error}", file=sys.stderr)
     return themes
 
 
@@ -376,7 +414,7 @@ class NoteWindow(Gtk.ApplicationWindow):
         self.mode_label = Gtk.Label()
         self.mode_label.get_style_context().add_class("mode")
         self.info_label = Gtk.Label(xalign=1, ellipsize=Pango.EllipsizeMode.START)
-        grip = Gtk.EventBox(child=Gtk.Label(label="◢"), tooltip_text="크기 조절")
+        grip = Gtk.EventBox(child=Gtk.Label(label="◢"), tooltip_text=tr("Resize"))
         grip.get_style_context().add_class("grip")
         grip.connect("button-press-event", self._on_grip_pressed)
         grip.connect(
@@ -469,7 +507,7 @@ class NoteWindow(Gtk.ApplicationWindow):
     def _update_status(self):
         if self._confirm_source:
             self.mode_label.set_text("rm")
-            self.info_label.set_text(f"'{self.get_title()}' 삭제할까요? [y/N]")
+            self.info_label.set_text(tr("rm: remove '{}'? [y/N]").format(self.get_title()))
             return
         if self.note.get("pinned", False):
             mode = "PIN"
@@ -540,7 +578,7 @@ class NoteWindow(Gtk.ApplicationWindow):
             item.connect("activate", lambda _item, name=name: self._set_theme(name))
             menu.append(item)
         menu.append(Gtk.SeparatorMenuItem())
-        folder = Gtk.MenuItem(label="테마 폴더 열기")
+        folder = Gtk.MenuItem(label=tr("Open themes folder"))
         folder.connect("activate", lambda _item: self._open_themes_dir())
         menu.append(folder)
         menu.show_all()
@@ -725,7 +763,11 @@ class StickyNotesApp(Gtk.Application):
         self.notes = load_notes()
 
     def do_command_line(self, command_line):
-        if "--new" in command_line.get_arguments()[1:]:
+        args = command_line.get_arguments()[1:]
+        if "--quit" in args:
+            # 업데이트한 뒤 새 코드로 다시 띄울 수 있도록 저장하고 끝낸다 (install.sh 가 쓴다)
+            self.quit()
+        elif "--new" in args:
             # 다른 창에 가려져 있어도 보이도록 메모들을 앞으로 꺼낸 뒤 새 메모를 연다
             self._show_hidden_notes()
             self.set_peek(True)

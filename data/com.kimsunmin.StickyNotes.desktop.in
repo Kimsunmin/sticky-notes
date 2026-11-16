@@ -2,13 +2,17 @@
 Type=Application
 Name=Sticky Notes
 Name[ko]=스티커 메모
-Comment=Terminal-style sticky notes that live on your desktop
-Comment[ko]=바탕화면에 붙여 두는 터미널 감성 메모
+Name[zh_CN]=便签
+Comment=Sticky notes that live on your desktop, with a terminal theme
+Comment[ko]=바탕화면에 붙여 두는 스티커 메모, 기본 테마는 터미널
+Comment[zh_CN]=贴在桌面上的便签，默认终端主题
 Exec=@EXEC@
 Icon=com.kimsunmin.StickyNotes
 Terminal=false
 Categories=Utility;GTK;
-Keywords=note;memo;sticky;terminal;메모;포스트잇;
+Keywords=note;notes;memo;sticky;post-it;desktop;terminal;
+Keywords[ko]=메모;스티커;포스트잇;바탕화면;터미널;
+Keywords[zh_CN]=便签;便利贴;笔记;桌面;终端;
 StartupNotify=true
 StartupWMClass=com.kimsunmin.StickyNotes
 Actions=new-note;
@@ -16,4 +20,5 @@ Actions=new-note;
 [Desktop Action new-note]
 Name=New Note
 Name[ko]=새 메모
+Name[zh_CN]=新建便签
 Exec=@EXEC@ --new
