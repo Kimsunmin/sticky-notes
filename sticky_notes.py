@@ -26,17 +26,27 @@ GLib.set_prgname(APP_ID)
 from gi.repository import Gdk, Gio, Gtk, Pango  # noqa: E402
 
 DATA_FILE = Path(GLib.get_user_data_dir()) / "sticky-notes" / "notes.json"
+# 사용자 테마 폴더. 파일 하나(이름.theme)가 테마 하나다
+THEMES_DIR = Path(GLib.get_user_config_dir()) / "sticky-notes" / "themes"
 
-# 이름: (글자색, 배경색)
+# 이름: (글자색, 배경색, CRT 효과(스캔라인과 글자 번짐))
 THEMES = {
-    "green": ("#3df07c", "#06130b"),
-    "amber": ("#ffb547", "#150e02"),
-    "cyan": ("#56d8ff", "#03121b"),
-    "magenta": ("#ff6ad5", "#16071a"),
-    "red": ("#ff6b5e", "#190706"),
-    "white": ("#e2e2e2", "#121212"),
+    "green": ("#3df07c", "#06130b", True),
+    "amber": ("#ffb547", "#150e02", True),
+    "cyan": ("#56d8ff", "#03121b", True),
+    "magenta": ("#ff6ad5", "#16071a", True),
+    "red": ("#ff6b5e", "#190706", True),
+    "white": ("#e2e2e2", "#121212", True),
+    # 종이 포스트잇
+    "yellow": ("#3b3314", "#fff4a3", False),
+    "pink": ("#4a1f32", "#ffd1e3", False),
+    "sky": ("#16324a", "#cfe8ff", False),
+    "mint": ("#1d3d1f", "#d3f5d0", False),
+    "lilac": ("#2f2450", "#e4d9ff", False),
 }
 DEFAULT_THEME = "green"
+# 테마 이름은 CSS 클래스에 들어가므로 이 글자만 쓴다
+THEME_NAME = re.compile(r"[A-Za-z0-9_-]+")
 FONT = '"Ubuntu Sans Mono", "Noto Sans Mono CJK KR", monospace'
 DEFAULT_FONT_SIZE = 12  # pt
 MIN_FONT_SIZE, MAX_FONT_SIZE = 8, 32
@@ -44,7 +54,7 @@ MIN_FONT_SIZE, MAX_FONT_SIZE = 8, 32
 # (글자, 툴팁, 액션)
 TITLE_BUTTONS = (
     ("[+]", "새 메모 (Ctrl+N)", "app.new-note"),
-    ("[~]", "테마 바꾸기 (Ctrl+T)", "win.cycle-theme"),
+    ("[~]", "테마 (Ctrl+T 로 다음 테마)", "win.theme-menu"),
     ("[^]", "다른 창 위에 고정 (Ctrl+P)", "win.toggle-pin"),
     ("[x]", "메모 삭제 (Ctrl+W)", "win.delete"),
 )
@@ -83,16 +93,13 @@ window.note undershoot, window.note overshoot {{ background: none; box-shadow: n
 """
 
 
-def _theme_css(name, fg, bg):
+def _theme_css(name, fg, bg, crt):
     scope = f"window.note.theme-{name}"
-    return f"""
+    css = f"""
 {scope} .note-frame {{ border-color: alpha({fg}, 0.35); }}
 {scope}:backdrop .note-frame {{ border-color: alpha({fg}, 0.2); }}
 {scope} .note-titlebar {{ background-color: alpha(mix({bg}, {fg}, 0.14), 0.95); color: alpha({fg}, 0.8); }}
-{scope} .note-body {{ background-color: alpha({bg}, 0.9);
-    background-image: repeating-linear-gradient(to bottom, alpha({fg}, 0.035), alpha({fg}, 0.035) 1px,
-                                                transparent 1px, transparent 3px); }}
-{scope} label {{ text-shadow: 0 0 5px alpha({fg}, 0.45); }}
+{scope} .note-body {{ background-color: alpha({bg}, 0.97); }}
 {scope} textview text {{ color: {fg}; caret-color: {fg}; }}
 {scope} textview text selection {{ background-color: alpha({fg}, 0.85); color: {bg}; }}
 {scope} scrollbar slider {{ background-color: alpha({fg}, 0.4); border: none; }}
@@ -103,9 +110,15 @@ def _theme_css(name, fg, bg):
 {scope} .statusline .mode {{ background-color: alpha({fg}, 0.85); color: {bg}; text-shadow: none; }}
 {scope} .statusline .mode.warn {{ background-color: #ff5f56; color: {bg}; }}
 """
-
-
-CSS += "".join(_theme_css(name, fg, bg) for name, (fg, bg) in THEMES.items())
+    if crt:
+        # 옛 CRT 모니터처럼 가로줄을 긋고 글자를 살짝 번지게 한다. 배경화면이 살짝 비치게 조금 더 투명하다
+        css += f"""
+{scope} .note-body {{ background-color: alpha({bg}, 0.9);
+    background-image: repeating-linear-gradient(to bottom, alpha({fg}, 0.035), alpha({fg}, 0.035) 1px,
+                                                         transparent 1px, transparent 3px); }}
+{scope} label {{ text-shadow: 0 0 5px alpha({fg}, 0.45); }}
+"""
+    return css
 
 
 def note_filename(first_line):
@@ -228,6 +241,35 @@ def save_notes(notes):
     os.replace(tmp, DATA_FILE)
 
 
+def read_theme(path):
+    """[Theme] 그룹에 Foreground, Background, Crt(생략하면 false)를 적은 테마 파일을 읽는다."""
+    if not THEME_NAME.fullmatch(path.stem):
+        raise ValueError("파일 이름에는 영문, 숫자, -, _ 만 쓸 수 있습니다")
+    keyfile = GLib.KeyFile()
+    keyfile.load_from_file(str(path), GLib.KeyFileFlags.NONE)
+    colors = []
+    for key in ("Foreground", "Background"):
+        value = keyfile.get_string("Theme", key).strip()
+        rgba = Gdk.RGBA()
+        if not rgba.parse(value):
+            raise ValueError(f"{key} 색을 알 수 없습니다: {value}")
+        # CSS 와 Pango 마크업에 그대로 넣으므로 #rrggbb 로 맞춰 둔다
+        colors.append("#{:02x}{:02x}{:02x}".format(*(round(c * 255) for c in (rgba.red, rgba.green, rgba.blue))))
+    crt = "Crt" in keyfile.get_keys("Theme")[0] and keyfile.get_boolean("Theme", "Crt")
+    return (*colors, crt)
+
+
+def load_themes():
+    """기본 테마에 사용자 테마를 더한다. 이름이 같으면 사용자 테마로 바꾼다."""
+    themes = dict(THEMES)
+    for path in sorted(THEMES_DIR.glob("*.theme")):
+        try:
+            themes[path.stem] = read_theme(path)
+        except (GLib.Error, ValueError) as error:
+            print(f"테마 {path} 를 읽지 못했습니다: {error}", file=sys.stderr)
+    return themes
+
+
 class NoteWindow(Gtk.ApplicationWindow):
     def __init__(self, app, note):
         super().__init__(application=app, show_menubar=False)
@@ -236,6 +278,7 @@ class NoteWindow(Gtk.ApplicationWindow):
         self._flash_message = ""
         self._flash_source = 0
         self._zoom_scroll = 0.0
+        self._theme_menu = None
         # 글자를 칠 때마다 버퍼 전체를 꺼내지 않고, 저장할 때만 note["text"] 로 옮긴다
         self._text_dirty = False
         self.get_style_context().add_class("note")
@@ -255,6 +298,7 @@ class NoteWindow(Gtk.ApplicationWindow):
 
         for name, callback in (
             ("cycle-theme", self._cycle_theme),
+            ("theme-menu", self._show_theme_menu),
             ("toggle-pin", self._toggle_pin),
             ("delete", self._ask_delete),
             ("undo", self._undo),
@@ -273,7 +317,7 @@ class NoteWindow(Gtk.ApplicationWindow):
         frame.pack_start(self._build_body(), True, True, 0)
         self.add(frame)
 
-        self._apply_theme(note.get("theme", DEFAULT_THEME))
+        self.apply_theme(note.get("theme", DEFAULT_THEME))
         self._apply_font_size(note.get("font_size", DEFAULT_FONT_SIZE))
         self._highlight_lines(0, self.buffer.get_line_count() - 1)
         self._update_title()
@@ -294,6 +338,8 @@ class NoteWindow(Gtk.ApplicationWindow):
             box.pack_start(button, False, False, 0)
             if action_name == "win.toggle-pin":
                 self.pin_button = button
+            elif action_name == "win.theme-menu":
+                self.theme_button = button
 
         # 배경은 안쪽 상자가 그리고, 이벤트 상자는 끌어서 옮기기 입력만 받는다
         titlebar = Gtk.EventBox(child=box, visible_window=False)
@@ -365,18 +411,21 @@ class NoteWindow(Gtk.ApplicationWindow):
             context.remove_class("active")
         self._update_status()
 
-    def _apply_theme(self, theme):
-        if theme not in THEMES:
-            theme = DEFAULT_THEME
+    def apply_theme(self, theme):
+        # 테마 파일이 잠깐 없거나 깨져도 메모에 적힌 테마는 그대로 두고 기본 테마로만 보여 준다
+        themes = self.get_application().themes
+        self.note["theme"] = theme
+        self.theme = theme if theme in themes else DEFAULT_THEME
         context = self.get_style_context()
-        for name in THEMES:
-            context.remove_class(f"theme-{name}")
-        context.add_class(f"theme-{theme}")
+        for name in context.list_classes():
+            if name.startswith("theme-"):
+                context.remove_class(name)
+        context.add_class(f"theme-{self.theme}")
         dim = Gdk.RGBA()
-        dim.parse(THEMES[theme][0])
+        dim.parse(themes[self.theme][0])
         dim.alpha = 0.45
         self._done_tag.props.foreground_rgba = dim
-        self.note["theme"] = theme
+        self._update_status()
 
     def _apply_font_size(self, size):
         size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, size))
@@ -435,7 +484,7 @@ class NoteWindow(Gtk.ApplicationWindow):
         chars = self.buffer.get_char_count()
         lines = self.buffer.get_line_count() if chars else 0
         updated = time.strftime("%m-%d %H:%M", time.localtime(self.note["updated"])) if "updated" in self.note else "--:--"
-        self.info_label.set_text(f"{self.note['theme']} │ {lines}L {chars}C │ {updated}")
+        self.info_label.set_text(f"{self.theme} │ {lines}L {chars}C │ {updated}")
 
     def _flash(self, message):
         # vim 처럼 상태줄에 잠깐 메시지를 띄운다
@@ -468,10 +517,41 @@ class NoteWindow(Gtk.ApplicationWindow):
         self.get_application().schedule_save()
 
     def _cycle_theme(self):
-        names = list(THEMES)
-        self._apply_theme(names[(names.index(self.note["theme"]) + 1) % len(names)])
-        self._update_status()
+        names = list(self.get_application().themes)
+        self._set_theme(names[(names.index(self.theme) + 1) % len(names)])
+
+    def _set_theme(self, theme):
+        self.apply_theme(theme)
         self.get_application().schedule_save()
+
+    def _show_theme_menu(self):
+        app = self.get_application()
+        # 테마 파일을 새로 넣거나 고쳤으면 메뉴를 열 때 반영된다
+        app.reload_themes()
+        if self._theme_menu:
+            self._theme_menu.destroy()
+        self._theme_menu = menu = Gtk.Menu()
+        menu.attach_to_widget(self.theme_button, None)
+        for name, (fg, bg, _crt) in app.themes.items():
+            item = Gtk.CheckMenuItem(draw_as_radio=True, active=name == self.theme)
+            label = Gtk.Label(xalign=0)
+            label.set_markup(f'<span font_family="monospace" background="{bg}" foreground="{fg}"> Aa </span>  {name}')
+            item.add(label)
+            item.connect("activate", lambda _item, name=name: self._set_theme(name))
+            menu.append(item)
+        menu.append(Gtk.SeparatorMenuItem())
+        folder = Gtk.MenuItem(label="테마 폴더 열기")
+        folder.connect("activate", lambda _item: self._open_themes_dir())
+        menu.append(folder)
+        menu.show_all()
+        menu.popup_at_widget(self.theme_button, Gdk.Gravity.SOUTH_EAST, Gdk.Gravity.NORTH_EAST, None)
+
+    def _open_themes_dir(self):
+        THEMES_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            Gio.AppInfo.launch_default_for_uri(THEMES_DIR.as_uri(), None)
+        except GLib.Error:
+            self._flash(str(THEMES_DIR))
 
     def _toggle_pin(self):
         self.note["pinned"] = not self.note.get("pinned", False)
@@ -613,6 +693,7 @@ class StickyNotesApp(Gtk.Application):
     def __init__(self):
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self.notes = []
+        self.themes = {}
         self.peeking = False
         self._save_source = 0
         self._focus_source = 0
@@ -629,6 +710,11 @@ class StickyNotesApp(Gtk.Application):
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
+        self._theme_provider = Gtk.CssProvider()
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(), self._theme_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        self.reload_themes()
 
         new_note_action = Gio.SimpleAction.new("new-note", None)
         new_note_action.connect("activate", lambda *_: self.new_note(near=self.get_active_window()))
@@ -663,6 +749,16 @@ class StickyNotesApp(Gtk.Application):
         if self._save_source:
             self.save_now()
         Gtk.Application.do_shutdown(self)
+
+    def reload_themes(self):
+        themes = load_themes()
+        if themes == self.themes:
+            return
+        self.themes = themes
+        css = "".join(_theme_css(name, *theme) for name, theme in themes.items())
+        self._theme_provider.load_from_data(css.encode())
+        for window in self.note_windows():
+            window.apply_theme(window.note["theme"])
 
     def note_windows(self):
         return [window for window in self.get_windows() if isinstance(window, NoteWindow)]
